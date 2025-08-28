@@ -1,0 +1,66 @@
+@import 'tailwindcss';
+
+.fade-enter-active,
+.fade-leave-active {
+  @apply transition-opacity duration-500 ease-in-out;
+}
+.fade-enter-from,
+.fade-leave-to {
+  @apply opacity-0;
+}
+.fade-enter-to,
+.fade-leave-from {
+  @apply opacity-100;
+}
+
+.color-transition-enter-active,
+.color-transition-leave-active {
+  transition: background-color 500ms ease-in-out;
+}
+
+.color-transition-enter-from {
+  background-color: #3b82f6; /* Blue 500 */
+}
+
+.color-transition-leave-to {
+  background-color: #10b981; /* Green 500 */
+}
+
+:root {
+  --highlight-bg: rgba(251, 191, 36, 0.16);
+  --primary-color: var(--p-primary-400);
+  /* --color-text: #ffffff; */
+}
+
+/* body {
+  color: var(--color-text);
+} */
+
+/* semantic color variables for this project */
+/* :root {
+  --color-background: var(--p-surface-0);
+  --color-background-soft: var(--vt-c-white-soft);
+  --color-background-mute: var(--vt-c-white-mute);
+
+  --color-border: var(--vt-c-divider-light-2);
+  --color-border-hover: var(--vt-c-divider-light-1);
+
+  --color-heading: var(--vt-c-text-light-1);
+  --color-text: var(--p-surface-700);
+
+  --section-gap: 160px;
+} */
+
+/* @media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: var(--p-surface-950);
+    --color-background-soft: var(--vt-c-black-soft);
+    --color-background-mute: var(--vt-c-black-mute);
+
+    --color-border: var(--vt-c-divider-dark-2);
+    --color-border-hover: var(--vt-c-divider-dark-1);
+
+    --color-heading: var(--vt-c-text-dark-1);
+    --color-text: var(--p-surface-200);
+  }
+} */
