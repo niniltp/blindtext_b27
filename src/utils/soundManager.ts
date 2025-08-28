@@ -1,124 +1,145 @@
 import { Midi } from "@tonejs/midi";
+import { ref } from 'vue'
+import { useSound } from '@vueuse/sound'
+import winSfx from '../assets/sfx/win_ya.mp3'
 
 export interface NoteData {
   name: string;
   freq: number;
 }
 
-class SoundManager {
-  private audioCtx: AudioContext | null = null;
-  private notes: NoteData[] = [];
-  private currentIndex = 0;
-  private wrongAttempts = 0;
-  private midiLoaded = false;
-
+export function soundManager () {
+  let audioCtx: AudioContext | null = null
+  const notes = ref<{ name: string; freq: number }[]>([])
+  let currentIndex = 0
+  let wrongAttempts = 0
+  let midiLoaded = false
+  
+  const victorySound = useSound(winSfx, { volume: 1 })
+  
   /**
-   * Initialise l'audio context (à appeler au premier clic utilisateur)
-   */
-  init() {
-    if (!this.audioCtx) {
-      this.audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+  * Initialise l'audio context (à appeler au premier clic utilisateur)
+  */
+  const initSM = () => {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
   }
-
+  
   /**
-   * Charger un fichier MIDI et extraire les notes
-   */
-  async loadMidi(path: string) {
-    if (!this.audioCtx) this.init();
-
+  * Charger un fichier MIDI et extraire les notes
+  */
+  const loadMidi = async (path: string) => {
+    if (!audioCtx) initSM();
+    
     const response = await fetch(path);
     const arrayBuffer = await response.arrayBuffer();
     const midi = new Midi(arrayBuffer);
-
+    
     // Trouve la première piste avec des notes
     let notesFound = false;
-    // for (const track of midi.tracks) {
-      if (midi.tracks[1].notes.length > 0) {
-        this.notes = midi.tracks[1].notes.map((n) => ({
+    for (const track of midi.tracks) {
+      if (track.notes.length > 0) {
+        notes.value = track.notes.map((n) => ({
           name: n.name,
-          freq: this.midiToFreq(n.midi),
+          freq: midiToFreq(n.midi),
         }));
+        
         notesFound = true;
-        // break;
+        break;
       }
-    // }
-
+    }
+    
     if (!notesFound) {
       // console.warn("No MIDI track with notes found");
       console.warn("Error. Something went wrong somewhere. Contact dev.");
     } else {
-      console.log("Sounds good.", this.notes.length);
+      console.log("Sounds good.", notes.value.length);
     }
-
-    this.currentIndex = 0;
-    this.midiLoaded = notesFound;
+    
+    currentIndex = 0;
+    midiLoaded = notesFound;
   }
-
+  
   /**
-   * Jouer une note (oscillateur)
-   */
-  private playNote(freq: number, duration = 0.4) {
-    if (!this.audioCtx) return;
-
-    const osc = this.audioCtx.createOscillator();
-    const gain = this.audioCtx.createGain();
-
+  * Jouer une note (oscillateur)
+  */
+  const playNote = (freq: number, duration = 0.4) => {
+    if (!audioCtx) return;
+    
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
     osc.frequency.value = freq;
     osc.type = "sine";
-
+    
     osc.connect(gain);
-    gain.connect(this.audioCtx.destination);
-
+    gain.connect(audioCtx.destination);
+    
     // volume + petit fade-out
-    gain.gain.setValueAtTime(0.2, this.audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(
       0.001,
-      this.audioCtx.currentTime + duration
+      audioCtx.currentTime + duration
     );
-
+    
     osc.start();
-    osc.stop(this.audioCtx.currentTime + duration);
+    osc.stop(audioCtx.currentTime + duration);
   }
-
+  
   /**
-   * Jouer un son d'erreur simple
-   */
-  private playErrorSound() {
-    this.playNote(150, 0.3); // beep grave
+  * Jouer un son d'erreur simple
+  */
+  const playErrorSound = () => {
+    playNote(150, 0.3); // beep grave
   }
-
+  
+  const playVictory = () => {
+    if (!audioCtx) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume()
+      
+    victorySound.play();
+    console.log("Yay !! Congrats, you have found all the words")
+  }
+  
   /**
-   * À appeler lorsqu’un mot est faux
-   */
-  onWrongWord() {
-    this.wrongAttempts++;
-
-    if (this.wrongAttempts < 20 || !this.midiLoaded) {
-      this.playErrorSound();
+  * À appeler lorsqu’un mot est faux
+  */
+  const onWrongWord = () => {
+    wrongAttempts++;
+    
+    if (wrongAttempts < 20 || !midiLoaded) {
+      playErrorSound();
     } else {
-      const note = this.notes[this.currentIndex];
+      const note = notes.value[currentIndex];
       if (note) {
-        this.playNote(note.freq);
-        this.currentIndex = (this.currentIndex + 1) % this.notes.length;
+        playNote(note.freq);
+        currentIndex = (currentIndex + 1) % notes.value.length;
       }
     }
   }
-
+  
   /**
-   * Réinitialiser le compteur d'erreurs et la mélodie
-   */
-  reset() {
-    this.wrongAttempts = 0;
-    this.currentIndex = 0;
+  * Réinitialiser le compteur d'erreurs et la mélodie
+  */
+  const reset = () => {
+    wrongAttempts = 0;
+    currentIndex = 0;
   }
-
+  
   /**
-   * Conversion MIDI → fréquence
-   */
-  private midiToFreq(midi: number): number {
+  * Conversion MIDI → fréquence
+  */
+  const midiToFreq = (midi: number) => {
     return 440 * Math.pow(2, (midi - 69) / 12);
   }
+  
+  return {
+    initSM,
+    loadMidi,
+    playNote,
+    onWrongWord,
+    playVictory,
+    reset,
+  }
 }
-
-export const soundManager = new SoundManager();

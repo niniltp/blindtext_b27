@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { useSound } from '@vueuse/sound'
 import scoringSfx from '../assets/sfx/sfx_right.wav'
 import wrongSfx from '../assets/sfx/sfx_wrong.mid'
-import { soundManager } from "@/utils/soundManager";
+import { soundManager } from "@/utils/soundManager"
 
 export interface HistoryWord {
   id: number
@@ -25,14 +25,23 @@ export function useBlindText() {
   const totalRevealedWords = computed(() => blindTextStore.totalRevealedWords)
   // const currentText = computed(() => blindTextStore.clearContent)
 
+  const {
+      initSM,
+      loadMidi,
+      playNote,
+      onWrongWord,
+      playVictory,
+      reset,
+} = soundManager()
+
   const init = () => {
     blindTextStore.init()
-    soundManager.init();
-    soundManager.loadMidi(wrongSfx);
+    initSM();
+    loadMidi(wrongSfx);
   }
 
   const playWrongWord = () => {
-    soundManager.onWrongWord();
+    onWrongWord();
   }
 
   const submitWord = () => {

@@ -1,9 +1,12 @@
-import { ref, computed } from 'vue'
+import { ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import text from '../data/2.txt?raw'
 import type { BlindLine } from '@/models/BlindLine'
 import { matchWordsInsensitive } from '@/utils/stringUtils'
-
+import { launchFireworks } from '@/utils/confettisUtils'
+import { useSound } from '@vueuse/sound'
+import winSound from '@/assets/sfx/win_ya.mp3'
+import fireworkSound from '@/assets/sfx/sfx_fireworks.mp3'
 const delimiters = ["'", ',', '-']
 
 const isBreakLine = (line: string[]): boolean => {
@@ -29,6 +32,22 @@ export const useBlindTextStore = defineStore('blindText', () => {
   const hiddenContent = ref<BlindLine[]>([])
   const totalWords = ref<number>(0)
   const totalRevealedWords = ref<number>(0)
+
+  const victorySound = useSound(winSound, { volume: 0.5 })
+  
+  const firework = useSound(fireworkSound, { volume: 0.2 })
+
+  watch(
+    [totalRevealedWords, totalWords], ([revealed, total]) => {
+      if (revealed >= total && total > 0) {
+          victorySound.play();
+          firework.play()
+          launchFireworks(() => {
+            firework.stop()
+          })
+      }
+    }
+  )
 
   function init() {
     const lines = text.split('\r\n')
