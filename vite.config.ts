@@ -9,6 +9,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue(), vueJsx(), vueDevTools(), tailwindcss()],
+  base: '/blindtext_b27/',
   assetsInclude: ["**/*.mid"],
   resolve: {
     alias: {
